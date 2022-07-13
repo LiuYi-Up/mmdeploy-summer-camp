@@ -54,7 +54,7 @@ make -j$(nproc)
 find ../images/imagenet-sample-images-master/ -type f > ../images/imagelist.txt
 ./tools/quantize/ncnn2table sqznet-opt.param sqznet-opt.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=kl  
 ```
-这里需要注意 `mean=, norm=, shape=, thread=, method=` 这些参数，对应不同的模型有不同的参数（note:我在敲这行代码的时候，习惯性的在参数[104,117,123]这些逗号后跟上一个空格，这样是会报错滴！ &#x1F92B; ）。
+这里需要注意 `mean=, norm=, shape=, thread=, method=` 这些参数，对应不同的模型有不同的参数（note:我在敲这行代码的时候，习惯性的在参数[104,117,123]这些逗号后跟上一个空格，这样是会报错滴！ &#x1F605; ）。
 #### d.量化模型  
 来到关键步骤，此时可以先删除 `a.编译ncnn` 步骤中生成的两个软连接，然后量化模型生成新的模型参数文件，最后测试结果：  
 ```
