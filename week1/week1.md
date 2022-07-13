@@ -48,5 +48,37 @@ make -j$(nproc)
 ```
 ./tools/ncnnoptimize ./squeezenet_v1.1.param ./squeezenet_v1.1.bin sqznet-opt.param sqznet-opt.bin 0  
 ```
-显示如下结果：
-
+#### c.生成校准表文件  
+首先，下载 [校准数据集](https://github.com/EliSchwartz/imagenet-sample-images) 到 `${NCNN_DIR}/images/` 并且生成路径文件，然后生成校准表：
+```
+find ../images/imagenet-sample-images-master/ -type f > ../images/imagelist.txt
+./tools/quantize/ncnn2table sqznet-opt.param sqznet-opt.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=kl  
+```
+这里需要注意 `mean=, norm=, shape=, thread=, method=` 这些参数，对应不同的模型有不同的参数（note:我在敲这行代码的时候，习惯性的在参数[104,117,123]这些逗号后跟上一个空格，这样是会报错滴！ &#x1F92B; ）。
+#### d.量化模型  
+来到关键步骤，此时可以先删除 `a.编译ncnn` 步骤中生成的两个软连接，然后量化模型生成新的模型参数文件，最后测试结果：  
+```
+rm squeezenet_v1.1.param  
+rm squeezenet_v1.1.bin  
+./tools/quantize/ncnn2int8 sqznet-opt.param sqznet-opt.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
+./examples/squeezenet ../images/screenshrt.png    
+```  
+结果如下：  
+<img alt='opt' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/test1.png'>  
+发现结果为 `921+1` 对应 `book jacket, dust cover, dust jacket, dust wrapper` 这结果都飞到宇宙了，不知道是什么原因 &#x1F914; 。那换个思路，在生成校准表的时候使用的 `method=kl` ，索性换一个方法 `method=aciq` 试试：  
+```
+./tools/quantize/ncnn2table sqznet-opt.param sqznet-opt.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=aciq  
+./tools/quantize/ncnn2int8 sqznet-opt.param sqznet-opt.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
+./examples/squeezenet ../images/screenshrt.png    
+```
+看看结果，欸，至少分类结果正确啦，但是精度下降的有点厉害：  
+<img alt='2' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/test2.png'>  
+再试试不经过模型优化，直接生成校准表呢：  
+```
+./tools/quantize/ncnn2table ../examples/squeezenet_v1.1.param ../examples/squeezenet_v1.1.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=kl  
+./tools/quantize/ncnn2int8 ../examples/squeezenet_v1.1.param ../examples/squeezenet_v1.1.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
+./examples/squeezenet ../images/screenshrt.png    
+```  
+看看结果，好像好多了：  
+<img alt='3' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/te3.png'>  
+实际上，每次同样操作的结果都不太相同。
