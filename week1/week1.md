@@ -43,12 +43,10 @@ make -j$(nproc)
 结果为：  
 ![wo](https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/wvulkan.png)  
 `281+1` 对应的标签为 `tabby, tabby cat` ，结果正确。因此之后的操作咱都禁止 vulkan。  
-### b.优化模型  
+#### b.优化模型  
 好，咱接着来，优化模型这一步在我的实验过程中似乎对网络的影响是负面的，咱先不管，跟着官方文档走一遍 &#x1F910; ：
 ```
 ./tools/ncnnoptimize ./squeezenet_v1.1.param ./squeezenet_v1.1.bin sqznet-opt.param sqznet-opt.bin 0  
 ```
 显示如下结果：
-```
 
-```
