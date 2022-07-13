@@ -21,7 +21,7 @@ NVIDIA GeForce RTX 2080 Ti
 在实践过程中发现，使用 vulkan 加速和不使用 vulkan 加速对模型推理的结果有影响（ps:原因不详，对vulkan没有好好学习了解过&#x1F633;）  
 先来看看两种情况下 squeezenet_v1.1 对 [测试图片](https://github.com/nihui/ncnn-android-squeezenet/blob/master/screenshot.png)  的推理结果：  
 <img alt="test.png" src="https://github.com/nihui/ncnn-android-squeezenet/blob/master/screenshot.png" width="360" height="640">   
-将 [测试图片](https://github.com/nihui/ncnn-android-squeezenet/blob/master/screenshot.png)  下载到  `${NCNN_DIR}/images/sceenshort.png`   
+将 [测试图片](https://github.com/nihui/ncnn-android-squeezenet/blob/master/screenshot.png)  下载到  `${NCNN_DIR}/images/sceenshot.png`   
 - 使用 vulkan  
 ```
 cd ${NCNN_DIR}/build20220713  
@@ -29,7 +29,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DNCNN_VULKAN=ON -DNCNN_BUILD_EXAMPLES=ON ..
 make -j$(nproc)  
 ln -sf ../examples/squeezenet_v1.1.param squeezenet_v1.1.param  
 ln -sf ../examples/squeezenet_v1.1.bin squeezenet_v1.1.bin
-./examples/squeezenet ../images/screenshrt.png
+./examples/squeezenet ../images/screenshot.png
 ```
 结果为：  
 ![w](https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/wovulkan.png)  
@@ -38,7 +38,7 @@ ln -sf ../examples/squeezenet_v1.1.bin squeezenet_v1.1.bin
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DNCNN_VULKAN=OFF -DNCNN_BUILD_EXAMPLES=ON ..  
 make -j$(nproc)  
-./examples/squeezenet ../images/screenshrt.png  
+./examples/squeezenet ../images/screenshot.png  
 ```
 结果为：  
 ![wo](https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/wvulkan.png)  
@@ -61,7 +61,7 @@ find ../images/imagenet-sample-images-master/ -type f > ../images/imagelist.txt
 rm squeezenet_v1.1.param  
 rm squeezenet_v1.1.bin  
 ./tools/quantize/ncnn2int8 sqznet-opt.param sqznet-opt.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
-./examples/squeezenet ../images/screenshrt.png    
+./examples/squeezenet ../images/screenshot.png    
 ```  
 结果如下：  
 <img alt='opt' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/test1.png'>  
@@ -69,7 +69,7 @@ rm squeezenet_v1.1.bin
 ```
 ./tools/quantize/ncnn2table sqznet-opt.param sqznet-opt.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=aciq  
 ./tools/quantize/ncnn2int8 sqznet-opt.param sqznet-opt.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
-./examples/squeezenet ../images/screenshrt.png    
+./examples/squeezenet ../images/screenshot.png    
 ```
 看看结果，欸，至少分类结果正确啦，但是精度下降的有点厉害：  
 <img alt='2' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/test2.png'>  
@@ -77,7 +77,7 @@ rm squeezenet_v1.1.bin
 ```
 ./tools/quantize/ncnn2table ../examples/squeezenet_v1.1.param ../examples/squeezenet_v1.1.bin ../images/imagelist.txt sqznet.table mean=[104,117,123] norm=[1,1,1] shape=[227,227,3] pixel=BGR thread=1 method=kl  
 ./tools/quantize/ncnn2int8 ../examples/squeezenet_v1.1.param ../examples/squeezenet_v1.1.bin squeezenet_v1.1.param  squeezenet_v1.1.bin sqznet.table  
-./examples/squeezenet ../images/screenshrt.png    
+./examples/squeezenet ../images/screenshot.png    
 ```  
 看看结果，好像好多了：  
 <img alt='3' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/te3.png'>  
