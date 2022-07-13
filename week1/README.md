@@ -82,5 +82,5 @@ rm squeezenet_v1.1.bin
 看看结果，好像好多了：  
 <img alt='3' src='https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/results_img/te3.png'>  
 实际上，每次同样操作的结果都不太相同。  
-### 3.实现 naive Conv2d 代码
+### 4.实现 naive Conv2d 代码
 待更新
