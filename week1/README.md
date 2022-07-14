@@ -86,7 +86,7 @@ rm squeezenet_v1.1.bin
 对于二维卷积，也是通过这次学习才知道，通常在神经网络中说的 Conv2d 是 `互相关` 操作，它与数学意义上的 `卷积` 区别主要在于，卷积核与原始图片相乘求和之前， `卷积` 操作是需要对卷积核进行顺时针180°的旋转（等价于上下翻转一次，再左右翻转一次）。而在神经网络中通常省略 `翻转` 操作是因为，神经网络的卷积核参数本身就是 `trainable` 的，网络是通过训练学习卷积核参数，因此翻不翻转是非必要的，通常就省略了。  
 所以通过python实现了单通道二维卷积和多通道二维卷积，[代码](https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week1/naiveConv2D.py)如下：  
 - 单通道 Conv2d  
-```
+```python
 def naiveConv2d(input, kernel, bias=0, stride=1, padding=[0, 0, 0, 0], flip=True):
     '''
     param input: 输入图像，二维
@@ -116,7 +116,7 @@ def naiveConv2d(input, kernel, bias=0, stride=1, padding=[0, 0, 0, 0], flip=True
     return output
 ```  
 - 多通道 Conv2d  
-```
+```python
 def Conv2d(input, kernel, bias=None, stride=1, padding=None):
     '''
     param input: 输入图像, shape: B * C * H * w
@@ -152,7 +152,7 @@ def Conv2d(input, kernel, bias=None, stride=1, padding=None):
     return output
 ```  
 分别与python的 `signal.convolve2d()` `torch.nn.functional.con2d()` 两个库函数对比结果：  
-```
+```Python
 # 单通道二维卷积测试
 input = np.random.rand(5,5)
 kernel = np.array([[0, 1, 0, 1], [0, 2, 0, 1], [1, 0, -1, 1], [1, 1, 1, 1]])
