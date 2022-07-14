@@ -151,7 +151,7 @@ def Conv2d(input, kernel, bias=None, stride=1, padding=None):
                         np.sum(input[b, :, i:i+kernel_h, j:j+kernel_w] * kernel[oc, :, :, :]) + bias[oc]
     return output
 ```  
-分别与python的 `signal.convolve2d()` `torch.nn.functional.con2d` 两个库函数对比结果：  
+分别与python的 `signal.convolve2d()` `torch.nn.functional.con2d()` 两个库函数对比结果：  
 ```
 # 单通道二维卷积测试
 input = np.random.rand(5,5)
