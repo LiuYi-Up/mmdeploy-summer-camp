@@ -95,14 +95,14 @@ $$Q(X,S)=Clip(Round(X∙S)) \ \ \ \ (1)$$
 其中X是一个张量， `S` 为正实数表示的缩放因子， `Round()` 表示向上取整（在不同方法中，还能够使用不同的取整方式，如四舍五入、向下取整等），`∙` 表示逐元素乘积， `Clip()` 表示超出量化范围的值被直接裁剪。
 
 我们设神经网络中的第l层量化为$\{A_l,W_l,S_l\}_{l=1}^L$，$A_l$，$W_l$，$S_l$分别为浮点型表示的输入、权重、量化因子。其中$S_l$包括权重和激活的量化因子$S_l^w$、$S_l^a$。第l层的输出的特征图为$O_l$（浮点型），其对应的量化后的特征图为$\hat{O}_l$。由此，网络的线性量化和去量化操作有如下公式表示：  
-$$\hat{O}_l=\frac{Q(A_l,S_l^a)\*Q(W_L,S_l^w)}{S_l^a∙S_l^w} \ \ \ \ (2)$$  
+$$\hat{O}_l=\frac{Q(A_l,S_l^a)*Q(W_L,S_l^w)}{S_l^a∙S_l^w} \ \ \ \ (2)$$  
 其中 `*` 表示卷积操作，若不量化，网络的输出将如下表示：
 $$O_l=A_l*W_l \ \ \ \ (3)$$
 这里就很有意思啦&#x1F609;，通过公式（2）-（3），我们希望量化后的$\hat{O}_l$要尽可能的接近原来的$O_l$，而它们之间的差异主要受量化因子$S_l$的影响（它会影响取整和裁剪的误差），所以，作者就提出了利用余弦相似度作为衡量$O_l$和$\hat{O}_l$之间的误差的目标函数，从而以某种方法枚举$S_l$找到最合适的量化因子&#x1F44D;。
 
 - 缩放优化  
 
-前面说到我们需要找到合适的缩放因子，而目前常用的方法是利用KL散度（即交叉熵）来衡量两者之间的差异。通常做法是利用至少1000个样本的校准数据（与训练数据相似，但不需要标签）来近似每一层激活（特征图）的分布，对权重则直接取绝对值最大值。这会忽略优化真实与量化之间分布的可能性，同时内存资源也还存在优化的空间。
+前面说到我们需要找到合适的缩放因子，而目前常用的方法是利用KL散度（即相对熵，它表示两个分布之间的差异）来衡量两者之间的差异。通常做法是利用至少1000个样本的校准数据（与训练数据相似，但不需要标签）来近似每一层激活（特征图）的分布，对权重则直接取绝对值最大值。这会忽略优化真实与量化之间分布的可能性，同时内存资源也还存在优化的空间。
 
 因此作者提出使用余弦相似度来优化，公式如下：
 $$max_{s_l}\frac{1}{N}∑_{i=1}^Ncos⁡(O_l^i \, \hat{O}_l^i)$$
@@ -113,4 +113,69 @@ ii.然后固定$S_l^w$，利用公式（4）对$S_l^a$进行优化；
 iii.重复i-ii直到公式（4）收敛或超出时间限制。  
 
 其中为了快速收敛，$S_l^a$和$S_l^w$使用最大值进行初始化。对于它们的搜索空间，使用$[αS_l,βS_l]$区间n等分进行枚举，其中 `α=0.5`，`β=2`, `n=100`。对于在上述区间中对$S_l$的搜索，作者实验发现使用最简单的枚举对不规则的波动更鲁棒。注意，对权重的量化细腻度为 `per-channel`，对激活的量化细腻度为 `per-tensor`（或者叫做 `per-layer` ）。这里作者还贴出了整个网络的量化流程伪代码，非常清晰明了，建议大家阅读原文，对于对称量化的理解到这也差不多啦，论文剩下的部分就是说明int7量化的一些细节和实验部分（为了偷懒这里就不再描述了&#x1F601;）。
+### 3.对比对称量化 & 非对称量化
+通过前面的学习我们已经对对称和非对称两种量化方式有了基本的了解，他们的主要区别是对称量化没有零点偏移，而非对称量化存在一个零点偏移。那两种方式有什么优缺点呢。我个人理解如下：  
+
+对称量化：  
+
+    - 优点有：计算过程简单，部署高效，能够节省更多的计算资源，推理速度更快，量化过程也更便捷。  
+    - 缺点有：精度损失可能会更大，尤其对于数据分布不均匀的网络，量化造成的噪声更大。  
+
+非对称量化：  
+
+    - 优点有：精度损失小。  
+    - 缺点有：计算和量化过程复杂（量化参数的优化更复杂），计算资源占用相对于对称量化会更高一些。  
+### 4.理解对称量化的 conv 计算过程  
+对于这个部分，主要内容为：  
+
+    - 了解堆成量化中校准数据的使用；
+    - 了解ncnn int8的量化流程；
+    - 了解ncnn int8的卷积过程。
+
+- 校准数据的使用  
+
+ncnn int8中的量化思想可以从[NVIDIA 8-bit Inference with TensorRT](https://on-demand.gputechconf.com/gtc/2017/presentation/s7310-8-bit-inference-with-tensorrt.pdf)讲起。
+
+首先我们结合nvidia的PPT以及大佬们的知乎软文来进一步了解对称量化的实施细节。理解过程中参考了以下软文以及源码，讲的都非常详细&#x1F44D;：  
+[知乎- Int8量化-介绍（一）](https://zhuanlan.zhihu.com/p/58182172)  
+[ncnn int8源码-python版本]( https://github.com/BUG1989/caffe-int8-convert-tools/blob/93ec69e465252e2fb15b1fc8edde4a51c9e79dbf/caffe-int8-convert-tool-dev-weight.py#L157)
+（或者可以参考 [c++版本](https://github.com/Tencent/ncnn/blob/30ab31cc4194f57866ba48753aeceae40e823d81/tools/quantize/ncnn2table.cpp#L254)）  
+
+首先看看这一页PPT：  
+<img alt="1.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/1.png" width="266" height="103">   
+有没有似曾相识，和咱们在第一节-非对称量化中提到的公式（12）很相似。PPT里的公式确实就是线性非对称量化的一种表示，接着假设以这种表示的两个张量相乘得到：  
+<img alt="2.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/2.png" width="225" height="170">  
+我们可以看出因为两个张量的偏置的存在，使得他们的乘法多出了三个子项。有啥解决办法呢？把偏执删掉&#x1F447;！  
+<img alt="3.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/3.png" width="245" height="177">  
+得到：  
+<img alt="4.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/4.png" width="384" height="133">  
+神清气爽有没有！等等，此时量化公式就变成了右边所表示的样子，这不就变成了对称量化嘛。但是直接把偏置删掉真的可以吗？作者们通过实验证明把偏置删掉对精度的损失是可以接受的（当然，通过后来陆续出现的对称量化的工作也能证明没有了偏置还是能够达到很高的精度的）。现在我们只需要考虑怎么得到合适的缩放因子。看看下面两种方式：  
+<img alt="5.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/5.png" width="347" height="190">  
+假设我们缩放范围是[-127,127]，左边的方法直接找到原数据的绝对值除以127作为缩放因子。这样虽然简单直白，但是如果原数据的正负分布不均匀，那么将会造成很严重的精度损失。因此可以选择右边的方式，找到一个阈值，把这个阈值以外的数据都缩到边界上，在用这个阈值计算缩放因子。
+
+那么问题就到了怎么找到合适的阈值。还记得在第二篇论文EasyQuant中咱们提到过的KL散度（也称KLD）吗，NVIDIA就是这么干的。在PTQ中，对于权重量化，当网络训练好以后，权重的分布是固定的而激活的分布是根据输入来决定，因此权重的量化不需要校准数据而激活则需要。简要流程如下：  
+<img alt="6.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/6.png" width="209" height="152">  
+大概就是：  
+
+    i.利用校准数据统计每一层激活的直方图；  
+    ii.根据直方图，对不同的阈值生成不同的数据分布；
+    iii.选择这些生成的分布与原数据相对熵（KL散度）最小的对应的阈值作为结果。  
+再往细节一点走，上述 `i` 和 `iii` 中的步骤能够理解，但是 `ii` 中怎么根据直方图列出不同阈值呢？伪代码如下：  
+<img alt="7.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/NVIDIA-8-bit-inference-with-TensorRT/7.png" width="328" height="177">    
+结合[ncnn int8源码-python版本]( https://github.com/BUG1989/caffe-int8-convert-tools/blob/93ec69e465252e2fb15b1fc8edde4a51c9e79dbf/caffe-int8-convert-tool-dev-weight.py#L157)一起理解。首先输入为通过校准数据得到的激活的2048个bin直方图，每个bin长为 $len_{2048bin}=\frac{max_{abs}}{2048}$。因为int8量化范围在[-127,127]之间，所以阈值从128开始枚举到2048。对每一个bin循环：  
+i. 将第 `i` 个bin作为截断区，第 `i` 及 `i` 之前的bin在内的数据作为 `P`；  
+
+ii. 将截断区外的值求和，将求和加到边界上（我很赞同这个[知乎]( https://zhuanlan.zhihu.com/p/58182172)中大佬说的观点，将界外的值求和加到边界上有两个原因：一是在计算KL散度时要计算数据概率，需要所有数的总值；二是将界外信息添加进来）；  
+
+iii. 计算 `P` 的概率分布；  
+
+iv. 将P中的数据重新划分为128个bin，每个新的bin长为 $len_ibin=\frac{i×len_{2048bin}}{128}$，在[ncnn int8源码-python版本]( https://github.com/BUG1989/caffe-int8-convert-tools/blob/93ec69e465252e2fb15b1fc8edde4a51c9e79dbf/caffe-int8-convert-tool-dev-weight.py#L157)中，这里的计算是通过 $num_{bin}=round(\frac{i}{128})$ 来确定，新的每一个bin替换为 $num_{bin}$ 个原来bin的和，即量化到in８记为 `Q`；  
+
+v. 现在 `Q` 是128个bin，为了和 `P` 计算KL散度，需要将 `Q` 的长度拓展到 `i` 个bin，使得与 `P` 的长度相同。列举PPT中的例子，假设现在 `P=[1,0,2,3,5,3,1,7]` 有8个bin，根据第 `iv` 步需要量化到2个bin长，$\frac{8}{2}=4$ 则 `Q=[1+0+2+3,5+3+1+7]=[6,16]` 。来到第 `v` 步，需要将 `Q` 拓展到与 `P` 一样的长度，`Q=[6/3,0,6/3,6/3,16/4,16/4,16/4,16/4  ]=[2,0,2,2,4,4,4,4]`。根据PPT给出的例子以及[ncnn int8源码-python版本](https://github.com/BUG1989/caffe-int8-convert-tools/blob/93ec69e465252e2fb15b1fc8edde4a51c9e79dbf/caffe-int8-convert-tool-dev-weight.py#L157)，这里的扩展操作应该是使用量化后的数除以为该bin贡献的数对数量，`0` 除外；  
+
+vi. 求 `Q` 的概率分布；  
+
+vii. 计算KL散度；  
+
+遍历所有128-2048 bin后，选择KL散度最小的bin的索引记为 `m`，计算 $(m+0.5)*len_{2048bin}$作为最终阈值结果，再根据 $S=\frac{128}{threshold}$ 得到缩放因子。  
 
