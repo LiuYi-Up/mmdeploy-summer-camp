@@ -178,4 +178,31 @@ vi. 求 `Q` 的概率分布；
 vii. 计算KL散度；  
 
 遍历所有128-2048 bin后，选择KL散度最小的bin的索引记为 `m`，计算 $(m+0.5)*len_{1}$作为最终阈值结果，再根据 $S=\frac{128}{threshold}$ 得到缩放因子。  
+- ncnn int8的量化、卷积过程  
 
+ncnn int8的量化流程和前面NVIDIA int8的流程很相似，使用的都是 `PTQ+对称量化+线性量化`，结合以下资料学习：
+
+[知乎- MegFlow 和 ncnn int8 简介](https://zhuanlan.zhihu.com/p/476605320)  
+[MegFloe and ncnn int8-PPT]( https://docs.qq.com/slide/DWWdkWFd1R0pqaVZp)  
+[知乎- Int8量化-介绍（一）](https://zhuanlan.zhihu.com/p/58182172)  
+[知乎-从TensorRT与ncnn看CNN卷积神经网络int8量化算法](https://zhuanlan.zhihu.com/p/387072703)  
+
+首先看看ncnn int8如何对权重进行量化的：  
+ <img alt="1.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/ncnn%20int8-img/1.png" width="538" height="325">  
+对权重量化使用的是 `per-channel` 细腻度，其缩放因子直接使用$S_l^w=\frac{127}{max⁡(abs(per out channel))}$。对于激活量化使用的是 `per-layer(per-tensor)` 的细腻度，缩放因子的计算则是与前面说的NVIDIA使用的方法一样：  
+<img alt="2.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/ncnn%20int8-img/2.png" width="538" height="325">  
+是不是很简单粗暴呢？嘿嘿&#x1F600;。接着再来看看量化流程以及理解论文里常看到的 `Dequant` 和 `Requant` 有啥不一样：  
+ <img alt="3.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/ncnn%20int8-img/3.png" width="538" height="325">  
+以一个两层卷积网络举例子&#x1F330;，激活的量化是在推理时在线完成的（但其缩放系数是离线通过校准数据得到的），权重的量化通常是推理之前就量化好保存下来的。浮点型的输入通过量化得到int8型，与int8型的权重进行int8卷积得到int32的输出，经过 `去量化(Dequant)+量化(Quant)=Requant` 再转为int8作为下一层的输入，最后一层的输出经过一次 `去量化(Dequant)` 得到浮点型的输出作为结果。  
+
+摘自[知乎- MegFlow 和 ncnn int8 简介](https://zhuanlan.zhihu.com/p/476605320)
+`“对于输出通道为32的卷积层，ncnn int8的核心就是找到 32+1 个系数”`，其中 `32` 个系数就是 `per-channel weight quantization` 的缩放系数，`1` 个系数则是 `per-tensor activation quantization` 的缩放系数。
+
+对于带有分支需要 `add` 或 `concat` 的网络就比较复杂，因为他们需要量化操作是受同样的缩放因子影响，因子再ncnn int8中选择先对两分支去量化以后再合并：  
+ <img alt="4.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/ncnn%20int8-img/4.png" width="538" height="325">  
+
+### 结语
+呜呼~&#x1F916;，至此，咱已经了解了对称和非对称量化，也了解了NVIDIA TensorRT和ncnn int8中的量化细节，通过知乎大佬们的分享和源代码的学习，算是收获多多！这次分享属于学习路上的一片笔记，如有理解不对的地方，欢迎大家指导和讨论！（表情）最后，欢迎大家关注&#x2B50;：  
+[MM Deploy]( https://github.com/open-mmlab/mmdeploy)  
+[ncnn]( https://github.com/Tencent/ncnn)  
+[LY-mmdeploy-summer-camp]( https://github.com/LiuYi-Up/mmdeploy-summer-camp)
