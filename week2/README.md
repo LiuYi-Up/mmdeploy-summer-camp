@@ -129,8 +129,7 @@ iii.重复i-ii直到公式（4）收敛或超出时间限制。
 对于这个部分，主要内容为：  
 
     - 了解堆成量化中校准数据的使用；
-    - 了解ncnn int8的量化流程；
-    - 了解ncnn int8的卷积过程。
+    - 了解ncnn int8的量化流程、卷积过程。
 
 - 校准数据的使用  
 
@@ -202,7 +201,7 @@ ncnn int8的量化流程和前面NVIDIA int8的流程很相似，使用的都是
  <img alt="4.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week2/ncnn%20int8-img/4.png" width="538" height="325">  
 
 ### 结语
-呜呼~&#x1F916;，至此，咱已经了解了对称和非对称量化，也了解了NVIDIA TensorRT和ncnn int8中的量化细节，通过知乎大佬们的分享和源代码的学习，算是收获多多！这次分享属于学习路上的一片笔记，如有理解不对的地方，欢迎大家指导和讨论！（表情）最后，欢迎大家关注&#x2B50;：  
+呜呼~&#x1F916;，至此，咱已经了解了对称和非对称量化，也了解了NVIDIA TensorRT和ncnn int8中的量化细节，通过知乎大佬们的分享和源代码的学习，算是收获多多！这次分享属于学习路上的一片笔记，如有理解不对的地方，欢迎大家指导和讨论！最后，欢迎大家关注&#x2B50;：  
 [MM Deploy]( https://github.com/open-mmlab/mmdeploy)  
 [ncnn]( https://github.com/Tencent/ncnn)  
 [LY-mmdeploy-summer-camp]( https://github.com/LiuYi-Up/mmdeploy-summer-camp)
