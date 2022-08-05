@@ -82,9 +82,22 @@ python tools/test.py configs/mmcls/classification_ncnn-int8_static.py ${MODEL_CO
 这一步可以通过调试了解大概过程，观看 [tool/deploy.py源码]( https://github.com/open-mmlab/mmdeploy/blob/master/tools/deploy.py)：
 - 首先将 `pytorch` 模型转换为 `onnx` 中间框架:pytorch-> end2end.onnx:
 - 接着将onnx转换为ncnn: end2end.onnx->end2end.bin + end2end.param
-- 生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx
+- 调用ppq生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx
 - 量化：end2end.bin + end2end.param+ end2end.table->end2end_int8.bin + end2end_int8.param
 - 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。
-（图片）
+fp32 result:  
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_pytorch.jpg"> 
+int8 result:  
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_ncnn.jpg"> 
 通过tools/test.py测试的结果如下：
+fp32 result:  
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/fp32.png"> 
+int8 result:  
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/int8.png">   
+可以看出，量化后的网络推理速度提升了很多，但同时精度也降了一些。  
 
+### 结语
+至此，本周学习就到这了！这次分享属于学习路上的一片笔记，如有理解不对的地方，欢迎大家指导和讨论！最后，欢迎大家关注&#x2B50;：  
+[MM Deploy]( https://github.com/open-mmlab/mmdeploy)  
+[ncnn]( https://github.com/Tencent/ncnn)  
+[LY-mmdeploy-summer-camp]( https://github.com/LiuYi-Up/mmdeploy-summer-camp)
