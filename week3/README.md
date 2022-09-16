@@ -88,22 +88,21 @@ python tools/test.py configs/mmcls/classification_ncnn-int8_static.py ${MODEL_CO
 - 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。
 
 fp32 result:  
-<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_pytorch.jpg"> 
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_pytorch.jpg">   
 int8 result:  
-<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_ncnn.jpg"> 
-通过tools/test.py测试的结果如下：
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_ncnn.jpg">   
+通过tools/test.py测试的结果如下：  
 fp32 result:  
-<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/fp32.png"> 
+<img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/fp32.png">   
 int8 result:  
 <img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/int8.png">   
 可以看出，量化后的网络推理速度提升了很多，但同时精度也降了一些。
 
--------------------------------------------------------------分割线------------------------------------------------------
+&#x2728;----&#x1F337;-----------------------------------------------------------分割线------------------------------------------------------&#x1F337;----&#x2728;
 
 ### 6.算子不匹配问题与mmdeploy的重写机制
 前段时间放了暑假，然后就偷懒了&#x1F92D;，现在继续把一些想要补充的内容填上。主要补充模型从 `pytorch` 转到 `onnx` 再到 `ncnn` 过程中涉及到的算子的添加与重写。
 #### 了解onnx及为pytorch添加onnx支持
-
 实际上，在此之前我一直不懂 `onnx` 是什么，也不知道为啥量化部署要转中间表示，直到看见下面链接中的一系列文档（&#x2728;这里我必须要感谢mmlab的大佬们，他们是真的想教会我，这是我遇到的最棒的开源社区，来自菜鸡的痛哭感谢&#x1F44D;）：
 
 [mmdeploy/tutorial文档](https://github.com/open-mmlab/mmdeploy/tree/master/docs/zh_cn/tutorial )
@@ -112,12 +111,10 @@ int8 result:
 
 <img alt='arch' src='https://user-images.githubusercontent.com/4560679/156556619-3da7a572-876b-4909-b26f-04e81190c546.png'>
 
-如果要把模型从深度学习框架通过中间表示部署到推理引擎上，理论上就需要模型的每一个算子在三个阶段中都有一对一或者一对多的映射。
-
 &#X1FA90;我们首先再次明确一点：中间表示只是一套标准，它定义了网络的计算图输入输出的格式、属性、名称序号等等内容。由于我们不需要执行 `onnxruntime.InferenceSession()` 来运行 `.onnx` 格式下的模型，当推理引擎拿到这套标准后只需要知道数据从那个算子（或模块）进和出、数据进出的格式有哪些，接着把推理引擎上对应的算子按照得到的进出顺序在搭建起来就能够还原了，因此并不在乎在这个算子（或模块）在中间表示中是怎么计算的（或者说在中间表示中根本不需要计算，只要有这个算子的定义规范好相应的输入输出等等信息就好）。
 #### mmdeploy中的新增算子与重写机制
 
-那么当网络从 `pytorch` 转到 `onnx` 时，如果遇到下面两种情况：
+如果要把模型从深度学习框架通过中间表示部署到推理引擎上，理论上就需要模型的每一个算子在三个阶段中都有一对一或者一对多的映射。那么当网络从 `pytorch` 转到 `onnx` 时，如果遇到下面两种情况：
 
 - pytorch代码中出现的算子在onnx找不到对应的算子；
 - 将导出的 `.onnx` 文件放到Netron（开源的模型可视化工具）中观察到某些算子被撕裂成很多奇怪的算子。
