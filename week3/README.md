@@ -80,22 +80,13 @@ python tools/test.py configs/mmcls/classification_ncnn-int8_static.py ${MODEL_CO
 
 ### 5.理解tools/deploy.py的流程
 
-<<<<<<< HEAD
-这一步可以通过调试了解大概过程，观看 [tool/deploy.py源码]( https://github.com/open-mmlab/mmdeploy/blob/master/tools/deploy.py)：  
-
-- 首先将 `pytorch` 模型转换为 `onnx` 中间框架:pytorch-> end2end.onnx:  
-- 接着将onnx转换为ncnn: end2end.onnx->end2end.bin + end2end.param  
-- 调用ppq生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx  
-- 量化：end2end.bin + end2end.param+ end2end.table->end2end_int8.bin + end2end_int8.param  
-- 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。   
-=======
 这一步可以通过调试了解大概过程，观看 [tool/deploy.py源码]( https://github.com/open-mmlab/mmdeploy/blob/master/tools/deploy.py)：
 - 首先将 `pytorch` 模型转换为 `onnx` 中间框架:pytorch-> end2end.onnx；  
-- 接着将onnx转换为ncnn: end2end.onnx->end2end.bin + end2end.param
+- 接着将 `onnx` 转换为 `ncnn`: end2end.onnx->end2end.bin + end2end.param
 - 调用ppq生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx
 - 量化：end2end.bin + end2end.param+ end2end.table->end2end_int8.bin + end2end_int8.param
 - 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。
->>>>>>> 1c28109da6a266b35ed0829da2260913180d8b61
+
 fp32 result:  
 <img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_pytorch.jpg"> 
 int8 result:  
@@ -107,7 +98,7 @@ int8 result:
 <img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/int8.png">   
 可以看出，量化后的网络推理速度提升了很多，但同时精度也降了一些。
 
--------------------------------------------------------------分割线-------------------------------------------------
+-------------------------------------------------------------分割线------------------------------------------------------
 
 ### 6.算子不匹配问题与mmdeploy的重写机制
 前段时间放了暑假，然后就偷懒了&#x1F92D;，现在继续把一些想要补充的内容填上。主要补充模型从 `pytorch` 转到 `onnx` 再到 `ncnn` 过程中涉及到的算子的添加与重写。
