@@ -8,7 +8,7 @@
 >6. 补充：算子不匹配问题与mmdeploy的重写机制
 
 ### 1.	安装MMDeploy
-在上一周的学习，咱已经了解了ncnn量化的基本流程和一些细节，本次量化的推理引擎就选择ncnn。当然MMDeploy还支持ONNXRuntime、TensorRT等等其他推理引擎，供大家选择。MMDeploy安装步骤咱就参考[mmdeploy build 官方文档](https://github.com/open-mmlab/mmdeploy/blob/master/docs/zh_cn/01-how-to-build/linux-x86_64.md)，这里我只是充一些自己遇到的问题和解决办法：  
+在上一周的学习，咱已经了解了ncnn量化的基本流程和一些细节，本次量化的推理引擎就选择ncnn。当然MMDeploy还支持ONNXRuntime、TensorRT等等其他推理引擎，供大家选择。MMDeploy安装步骤咱就参考[mmdeploy build 官方文档](https://github.com/open-mmlab/mmdeploy/blob/master/docs/zh_cn/01-how-to-build/linux-x86_64.md)，这里我只是补充一些自己遇到的问题和解决办法：  
 #### 安装构建和编译工具链   
 
 这一步如果没有安装，就按照文档里的步骤进行；如果是已经安装了的，就需要确保版本对齐（我就是后者情况，但是一开始没有注意cmake版本，导致进行后面步骤时报错，又再重新安装解决的）：  
@@ -80,6 +80,7 @@ python tools/test.py configs/mmcls/classification_ncnn-int8_static.py ${MODEL_CO
 
 ### 5.理解tools/deploy.py的流程
 
+<<<<<<< HEAD
 这一步可以通过调试了解大概过程，观看 [tool/deploy.py源码]( https://github.com/open-mmlab/mmdeploy/blob/master/tools/deploy.py)：  
 
 - 首先将 `pytorch` 模型转换为 `onnx` 中间框架:pytorch-> end2end.onnx:  
@@ -87,6 +88,14 @@ python tools/test.py configs/mmcls/classification_ncnn-int8_static.py ${MODEL_CO
 - 调用ppq生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx  
 - 量化：end2end.bin + end2end.param+ end2end.table->end2end_int8.bin + end2end_int8.param  
 - 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。   
+=======
+这一步可以通过调试了解大概过程，观看 [tool/deploy.py源码]( https://github.com/open-mmlab/mmdeploy/blob/master/tools/deploy.py)：
+- 首先将 `pytorch` 模型转换为 `onnx` 中间框架:pytorch-> end2end.onnx；  
+- 接着将onnx转换为ncnn: end2end.onnx->end2end.bin + end2end.param
+- 调用ppq生成校准表：end2end.onnx->end2end.table+end2end_quant.onnx
+- 量化：end2end.bin + end2end.param+ end2end.table->end2end_int8.bin + end2end_int8.param
+- 最后就是输出pytorch与ncnn_int8量化前后的两个模型对测试图片的测试结果。
+>>>>>>> 1c28109da6a266b35ed0829da2260913180d8b61
 fp32 result:  
 <img alt="fp32.png" src="https://github.com/LiuYi-Up/mmdeploy-summer-camp/blob/main/week3/img/output_pytorch.jpg"> 
 int8 result:  
